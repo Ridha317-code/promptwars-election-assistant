@@ -31,6 +31,28 @@ const state = {
   lastUserInput: '',   // last raw user input for context
   conversationStartTime: null, // when the conversation started
   repeatCount: {},     // track how many times each topic was asked
+  lang: 'en',          // 'en' | 'ta' (Multi-language support)
+};
+
+/* ==============================
+   TRANSLATIONS (Basic Support)
+   ============================== */
+const TRANSLATIONS = {
+  ta: {
+    welcome: `வணக்கம் 👋 நான் உங்கள் தேர்தல் வழிகாட்டி உதவியாளர்.<br><br>நான் உங்களுக்கு உதவ முடியும்:<br>• உங்கள் வாக்களிக்கும் தகுதியைச் சரிபார்க்கவும்<br>• பதிவு செய்வதன் மூலம் உங்களுக்கு வழிகாட்டவும்<br>• உங்கள் வாக்குச்சாவடியைக் கண்டறியவும்<br><br>தொடங்குவோம் — <strong>உங்கள் வயது என்ன?</strong> 🎂`,
+    age_label: "உங்கள் வயது என்ன?",
+    eligibility_chip: "நான் தகுதியுடையவனா? ✅",
+    register_chip: "பதிவு செய்வது எப்படி? 📋",
+    booth_chip: "வாக்குச்சாவடி எங்கே? 📍",
+    next_steps_chip: "அடுத்தது என்ன? ➡️",
+    timeline_chip: "காலக்கெடு 📅",
+    thanks_chip: "நன்றி! 🙏",
+    bot_typing: "உதவியாளர் தட்டச்சு செய்கிறார்...",
+    input_placeholder: "உங்கள் செய்தியைத் தட்டச்சு செய்க...",
+    sidebar_timeline: "📅 தேர்தல் காலவரிசை",
+    sidebar_language: "🌐 மொழி",
+    start_over: "🔄 மீண்டும் தொடங்கவும்",
+  }
 };
 
 /* ==============================
@@ -59,6 +81,7 @@ const CHIPS = {
   not_reg_more: ['📋 Registration steps', '📅 Deadlines', '🏫 Find my booth', '❓ Something else'],
   unsure_reg:   ['How do I check?', 'I think I am', 'I\'m definitely not'],
   next_steps:   ['What should I do next?', '📅 Show timeline', '🏫 Find my booth'],
+  welcome:      ['Am I eligible? ✅', 'How to register? 📋', 'Find polling booth 📍'],
 };
 
 /* ==============================
@@ -431,6 +454,7 @@ const resetBtn        = document.getElementById('resetBtn');
 const sidebar         = document.getElementById('sidebar');
 const sidebarToggle   = document.getElementById('sidebarToggle');
 const headerSubtitle  = document.getElementById('headerSubtitle');
+const langSelect      = document.getElementById('langSelect');
 
 /* ==============================
    UTILITIES
@@ -483,17 +507,38 @@ function updateHeaderContext() {
   headerSubtitle.textContent = context;
 }
 
-/** Show quick-reply chips */
+/** Show quick-reply chips — now language aware */
 function showChips(keys) {
   quickChips.innerHTML = '';
   if (!keys || !CHIPS[keys]) return;
+  
   CHIPS[keys].forEach(text => {
+    let displayText = text;
+    
+    // Simple translation mapping for chip labels
+    if (state.lang === 'ta') {
+      if (text.includes('Am I eligible')) displayText = TRANSLATIONS.ta.eligibility_chip;
+      else if (text.includes('How to register')) displayText = TRANSLATIONS.ta.register_chip;
+      else if (text.includes('Find polling booth')) displayText = TRANSLATIONS.ta.booth_chip;
+      else if (text.includes('What should I do next')) displayText = TRANSLATIONS.ta.next_steps_chip;
+      else if (text.includes('Show timeline')) displayText = TRANSLATIONS.ta.timeline_chip;
+      else if (text.includes('Thanks')) displayText = TRANSLATIONS.ta.thanks_chip;
+    }
+
     const btn = document.createElement('button');
     btn.className = 'chip';
-    btn.textContent = text;
-    btn.addEventListener('click', () => handleChipClick(text));
+    btn.textContent = displayText;
+    btn.addEventListener('click', () => handleChipClick(displayText));
     quickChips.appendChild(btn);
   });
+}
+
+/** Chip click handler — auto-fill and send */
+function handleChipClick(text) {
+  clearChips();
+  userInput.value = text;
+  autoResizeTextarea();
+  sendMessage();
 }
 
 /** Clear chips */
@@ -625,6 +670,10 @@ function processInput(raw) {
 
     case 'ask_location':
       handleLocationInput(input, lower);
+      break;
+
+    case 'ask_booth_location':
+      handleBoothLocationInput(input);
       break;
 
     case 'free':
@@ -937,10 +986,14 @@ function showNotRegisteredResult() {
 
 /** Step-by-step registration — more conversational */
 function showRegistrationSteps() {
+  const repeat = repeatAwarePrefix('registration');
+  const mood = repeat ? '' : moodPrefix();
+  const context = repeat ? '' : contextConnector('registration');
   markDiscussed('registration');
   botReply(
-    `${stepBadge('Registration Guide')}
-     Here's your simple <strong>4-step path</strong> to becoming a registered voter:<br><br>
+    `${stepBadge('Registration Guide')}<br>` +
+    `${repeat}${mood}${context}` +
+    `Here's your simple <strong>4-step path</strong> to becoming a registered voter:<br><br>
 
      <strong>Step 1 — Apply Online or Offline</strong><br>
      ${buildList([
@@ -1045,28 +1098,50 @@ function showWhatToCarry() {
   setTimeout(() => showChips('done'), 2100);
 }
 
-/** Polling booth info — more conversational */
+/** Polling booth info — upgraded with Google Maps */
 function showPollingBoothInfo() {
+  const repeat = repeatAwarePrefix('booth');
+  const context = repeat ? '' : contextConnector('booth');
   markDiscussed('booth');
-  const loc = state.location ? ` in <strong>${escapeHtml(state.location)}</strong>` : '';
+  
+  if (!state.location) {
+    state.step = 'ask_booth_location';
+    botReply(
+      `${stepBadge('Polling Booth')}<br>` +
+      `${moodPrefix()}I'd be happy to help you find your nearest voting center! 😊<br><br>` +
+      `<strong>Please enter your city or area name:</strong>`,
+      800
+    );
+    return;
+  }
+
+  const query = encodeURIComponent("polling booth near " + state.location);
+  const mapLink = `https://www.google.com/maps/search/?api=1&query=${query}`;
+
   botReply(
-    `🏫 <strong>Finding Your Polling Booth</strong>${loc}<br><br>
-     Here's how to locate exactly where you need to go:<br><br>
-     ${buildList([
-       '🌐 Go to <strong>electoralsearch.eci.gov.in</strong>',
-       '🔍 Search using your <strong>EPIC number</strong> or <strong>name + area</strong>',
-       '📍 Your booth name and full address will appear',
-       '🗺️ Use <strong>Google Maps</strong> to get directions beforehand',
-       '📞 Or call <strong>1950</strong> — the Election Commission helpline',
-     ])}
-     ${infoBox(`
-       📍 <strong>Booth Locator:</strong> electoralsearch.eci.gov.in<br>
-       📞 <strong>Helpline:</strong> 1950 (toll-free)
-     `, 'success')}
-     <br>🕐 <strong>Arrive 10–15 minutes early</strong> to avoid peak-hour queues — mornings (7–9 AM) and evenings (4–6 PM) tend to be busiest!`,
+    `🏫 <strong>Finding Your Polling Booth</strong> in <strong>${escapeHtml(state.location)}</strong><br><br>` +
+    `${repeat}${context}` +
+    `I've found the best way for you to locate your booth! 🗺️<br><br>` +
+    `${infoBox(`
+      📍 <strong>Search Near You:</strong><br><br>
+      <a href="${mapLink}" target="_blank" class="map-link">🔗 Open in Google Maps</a>
+    `, 'success')}<br>` +
+    `<strong>Other official ways to check:</strong><br>` +
+    `${buildList([
+      '🌐 Visit <strong>electoralsearch.eci.gov.in</strong>',
+      '🔍 Search using your <strong>EPIC number</strong>',
+      '📞 Call <strong>1950</strong> for official assistance'
+    ])}`,
     950,
     'done'
   );
+}
+
+/** Handle location input specifically for booth finding */
+function handleBoothLocationInput(input) {
+  state.location = input;
+  state.step = 'free'; // Return to free chat
+  showPollingBoothInfo();
 }
 
 /** Eligibility — clear and concise */
@@ -1260,20 +1335,75 @@ function showGoodbye() {
   clearChips();
 }
 
-/** Smart fallback — helpful, not frustrating */
-function showSmartFallback(raw) {
-  // If the user has typed a few messages, be more personable
-  const prefix = state.messageCount > 5
-    ? 'I appreciate your curiosity! '
-    : '';
+/* ==============================
+   GEMINI AI INTEGRATION
+   ============================== */
 
-  botReply(
-    `${prefix}${pickRandom(VARIANTS.fallback)}<br><br>
-     ${buildList(VARIANTS.fallback_topics)}
-     <br>Just ask naturally — for example, <em>"How do I register?"</em> or <em>"When is the election?"</em> 😊`,
-    900,
-    'done'
-  );
+const GEMINI_API_KEY = "YOUR_API_KEY";
+
+/**
+ * Call Google Gemini 1.5 Flash API
+ */
+async function getGeminiResponse(userMessage) {
+  try {
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        contents: [{
+          parts: [{ text: userMessage }]
+        }]
+      })
+    });
+
+    if (!response.ok) throw new Error('API request failed');
+
+    const data = await response.json();
+    if (data.candidates && data.candidates[0] && data.candidates[0].content) {
+      return data.candidates[0].content.parts[0].text;
+    }
+    return null;
+  } catch (error) {
+    console.error("Gemini Error:", error);
+    return null;
+  }
+}
+
+/** Smart fallback — helpful, not frustrating (AI Enhanced) */
+async function showSmartFallback(raw) {
+  // Show typing indicator
+  typingIndicator.style.display = 'flex';
+  scrollToBottom();
+  userInput.disabled = true;
+  sendBtn.disabled = true;
+
+  const aiResponse = await getGeminiResponse(raw);
+
+  typingIndicator.style.display = 'none';
+  userInput.disabled = false;
+  sendBtn.disabled = false;
+
+  if (aiResponse) {
+    // Format response (bullet points, clear paragraphs)
+    const formatted = aiResponse
+      .replace(/\n\n/g, '<br><br>')
+      .replace(/\n/g, '<br>')
+      .replace(/\* (.*?)/g, '• $1');
+      
+    appendMessage('bot', formatted);
+    showChips('done');
+    userInput.focus();
+  } else {
+    // Original fallback logic if Gemini fails
+    const prefix = state.messageCount > 5 ? 'I appreciate your curiosity! ' : '';
+    appendMessage('bot', `${prefix}${pickRandom(VARIANTS.fallback)}<br><br>
+      ${buildList(VARIANTS.fallback_topics)}
+      <br>Just ask naturally — for example, <em>"How do I register?"</em> or <em>"When is the election?"</em> 😊`);
+    showChips('done');
+    userInput.focus();
+  }
 }
 
 /* ==============================
@@ -1298,22 +1428,16 @@ function startFlow() {
   else if (hour < 17) greeting = 'Good afternoon';
   else greeting = 'Good evening';
 
-  botReply(
-    `👋 ${greeting}! Welcome to the <strong>Smart Election Guide</strong>!<br><br>
-     I'm your personal voting assistant — think of me as a <strong>knowledgeable friend</strong> who knows everything about elections. 🧠<br><br>
-     I can help you with:<br>
-     ${buildList([
-       '✅ Checking if you\'re <strong>eligible to vote</strong>',
-       '📋 <strong>Registering</strong> as a voter (step by step)',
-       '🗳️ Understanding the <strong>voting process</strong>',
-       '📅 Important <strong>dates and deadlines</strong>',
-       '🆔 What <strong>documents</strong> you\'ll need',
-     ])}
-     <br>Let's start! <strong>How old are you?</strong> 🎂<br>
-     <em>(Just type a number — like 25)</em>`,
-    1200,
-    'age_examples'
-  );
+  const welcomeMsg = state.lang === 'ta'
+    ? TRANSLATIONS.ta.welcome
+    : `Hi 👋 I'm your <strong>Election Guide Assistant</strong>.<br><br>` +
+      `I can help you:<br>` +
+      `• Check your voting eligibility<br>` +
+      `• Guide you through registration<br>` +
+      `• Find your polling booth<br><br>` +
+      `Let's start — <strong>what is your age?</strong> 🎂`;
+
+  botReply(welcomeMsg, 1200, 'welcome');
 }
 
 /* ==============================
@@ -1407,9 +1531,28 @@ sidebarToggle.addEventListener('click', () => {
   overlay.classList.toggle('active');
 });
 
+/** Handle language change */
+langSelect.addEventListener('change', (e) => {
+  state.lang = e.target.value;
+  
+  // Update static UI texts immediately
+  if (state.lang === 'ta') {
+    typingIndicator.querySelector('p').textContent = TRANSLATIONS.ta.bot_typing;
+    userInput.placeholder = TRANSLATIONS.ta.input_placeholder;
+    resetBtn.innerHTML = TRANSLATIONS.ta.start_over;
+  } else {
+    typingIndicator.querySelector('p').textContent = 'Assistant is typing…';
+    userInput.placeholder = 'Type your message… (Shift+Enter for new line)';
+    resetBtn.innerHTML = '🔄 Start Over';
+  }
+  
+  resetConversation();
+});
+
 /* ==============================
    INIT — Start the conversation
    ============================== */
 document.addEventListener('DOMContentLoaded', () => {
   setTimeout(startFlow, 600);
 });
+

@@ -529,6 +529,41 @@ body {
   transform: translateY(-2px);
 }
 
+/* ---- LANGUAGE SELECTOR ---- */
+.lang-select {
+  background: var(--bg-card);
+  border: 1px solid var(--glass-border);
+  color: var(--text-primary);
+  padding: 10px;
+  border-radius: var(--radius-md);
+  font-family: var(--font);
+  font-size: 0.9rem;
+  outline: none;
+  cursor: pointer;
+  transition: var(--transition);
+  width: 100%;
+}
+.lang-select:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--accent-primary);
+}
+.lang-select option {
+  background: var(--bg-surface);
+  color: var(--text-primary);
+}
+
+/* ---- DISCLAIMER ---- */
+.disclaimer {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  text-align: center;
+  margin-top: 12px;
+  opacity: 0.7;
+  font-weight: 400;
+  line-height: 1.4;
+}
+
+
 /* ================================================
    SCROLLBAR UTILITY
    ================================================ */
@@ -564,3 +599,30 @@ body {
   z-index: 15;
 }
 .overlay.active { display: block; }
+
+/* ---- GOOGLE MAPS LINK BUTTON ---- */
+.map-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 12px 24px;
+  background: var(--user-bubble);
+  color: #fff !important;
+  text-decoration: none;
+  font-weight: 600;
+  border-radius: var(--radius-md);
+  transition: var(--transition);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+  width: 100%;
+  margin-top: 5px;
+}
+.map-link:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(99, 102, 241, 0.5);
+  filter: brightness(1.1);
+}
+.map-link:active {
+  transform: translateY(0);
+}
+
