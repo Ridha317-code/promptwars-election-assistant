@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Smart Election Guide Assistant — your interactive guide to understanding voting eligibility, registration, and election timelines." />
+  <title>Smart Election Guide Assistant</title>
+  <link rel="stylesheet" href="style.css" />
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+</head>
+<body>
+
+  <!-- ========== APP WRAPPER ========== -->
+  <div class="app-wrapper">
+
+    <!-- ========== SIDEBAR ========== -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-brand">
+        <div class="brand-icon">🗳️</div>
+        <div>
+          <h1 class="brand-title">ElectionIQ</h1>
+          <p class="brand-sub">Your Smart Voting Guide</p>
+        </div>
+      </div>
+
+      <!-- Election Timeline Card -->
+      <div class="sidebar-section">
+        <h2 class="sidebar-heading">📅 Election Timeline</h2>
+        <div class="timeline-list">
+          <div class="timeline-item">
+            <span class="tl-dot tl-past"></span>
+            <div class="tl-content">
+              <p class="tl-label">Voter Registration Opens</p>
+              <p class="tl-date">Jan 20, 2026</p>
+            </div>
+          </div>
+          <div class="timeline-item">
+            <span class="tl-dot tl-upcoming"></span>
+            <div class="tl-content">
+              <p class="tl-label">Registration Deadline</p>
+              <p class="tl-date">Apr 18, 2026</p>
+            </div>
+          </div>
+          <div class="timeline-item">
+            <span class="tl-dot tl-upcoming"></span>
+            <div class="tl-content">
+              <p class="tl-label">Voter List Published</p>
+              <p class="tl-date">Apr 20, 2026</p>
+            </div>
+          </div>
+          <div class="timeline-item">
+            <span class="tl-dot tl-election"></span>
+            <div class="tl-content">
+              <p class="tl-label">🗳️ Election Day</p>
+              <p class="tl-date">Apr 23, 2026</p>
+            </div>
+          </div>
+          <div class="timeline-item">
+            <span class="tl-dot tl-future"></span>
+            <div class="tl-content">
+              <p class="tl-label">Results Declared</p>
+              <p class="tl-date">Apr 26, 2026</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Tips -->
+      <div class="sidebar-section">
+        <h2 class="sidebar-heading">💡 Quick Tips</h2>
+        <ul class="tips-list">
+          <li>✅ Carry a valid photo ID on election day</li>
+          <li>✅ Check your booth location in advance</li>
+          <li>✅ Voting is free — never pay anyone</li>
+          <li>✅ Your vote is secret and protected</li>
+        </ul>
+      </div>
+
+      <!-- Reset Button -->
+      <button class="reset-btn" id="resetBtn" title="Start a new conversation">
+        🔄 Start Over
+      </button>
+    </aside>
+
+    <!-- ========== MAIN CHAT PANEL ========== -->
+    <main class="chat-panel">
+
+      <!-- Chat Header -->
+      <header class="chat-header">
+        <button class="sidebar-toggle" id="sidebarToggle" aria-label="Toggle sidebar">☰</button>
+        <div class="header-info">
+          <div class="avatar-status">
+            <div class="header-avatar">🤖</div>
+            <span class="status-dot"></span>
+          </div>
+          <div>
+            <h2 class="header-title">Election Guide Assistant</h2>
+            <p class="header-subtitle" id="headerSubtitle">Online • Here to help you vote!</p>
+          </div>
+        </div>
+        <div class="header-badge">LIVE</div>
+      </header>
+
+      <!-- Progress Bar -->
+      <div class="progress-bar-wrap" id="progressWrap">
+        <div class="progress-bar" id="progressBar" style="width: 0%"></div>
+        <span class="progress-label" id="progressLabel">Getting started…</span>
+      </div>
+
+      <!-- Chat Messages -->
+      <div class="messages-area" id="messagesArea" role="log" aria-live="polite" aria-label="Chat messages">
+        <!-- Messages injected by JS -->
+      </div>
+
+      <!-- Typing indicator -->
+      <div class="typing-indicator" id="typingIndicator" style="display:none">
+        <div class="typing-bubble">
+          <span></span><span></span><span></span>
+        </div>
+        <p>Assistant is typing…</p>
+      </div>
+
+      <!-- Input Area -->
+      <div class="input-area">
+        <div class="input-wrapper">
+          <!-- FIX 2: Replaced <input> with <textarea> for multi-line support.
+               - Enter sends the message; Shift+Enter adds a new line.
+               - Auto-resize is handled in script.js via the 'input' event.
+          -->
+          <textarea
+            id="userInput"
+            class="chat-input"
+            placeholder="Type your message… (Shift+Enter for new line)"
+            autocomplete="off"
+            aria-label="Your message"
+            maxlength="600"
+            rows="1"
+          ></textarea>
+          <button class="send-btn" id="sendBtn" aria-label="Send message" title="Send">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
+              <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+            </svg>
+          </button>
+        </div>
+        <!-- Quick Reply Chips -->
+        <div class="quick-chips" id="quickChips"></div>
+      </div>
+
+    </main>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
