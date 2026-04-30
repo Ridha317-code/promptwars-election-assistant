@@ -50,3 +50,10 @@ The solution uses a combination of **rule-based logic and AI responses** to guid
 - Internet connection is available  
 - Election data is predefined or sourced reliably  
 - The assistant provides guidance, not legal authority  
+
+---
+
+## 🚀 Deployment
+
+- Deployment prepared using Docker for Google Cloud Run.
+- Due to billing activation delay, live demo is hosted on Netlify.
